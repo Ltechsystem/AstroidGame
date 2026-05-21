@@ -142,7 +142,11 @@ public class Game {
         if (entity.getPolygonCoordinates() == null) return;
         Polygon poly = new Polygon(entity.getPolygonCoordinates());
         poly.setStroke(Color.WHITE);
-        poly.setFill(Color.TRANSPARENT);
+        poly.setFill(switch (entity.getEntityType()) {
+            case PLAYER -> Color.BLUE;
+            case ENEMY  -> Color.RED;
+            default     -> Color.TRANSPARENT;
+        });
         polygonMap.put(entity.getID(), poly);
         gameWindow.getChildren().add(poly);
     }

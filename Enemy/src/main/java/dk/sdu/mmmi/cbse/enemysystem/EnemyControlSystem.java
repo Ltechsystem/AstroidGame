@@ -2,27 +2,35 @@ package dk.sdu.mmmi.cbse.enemysystem;
 
 import dk.sdu.mmmi.cbse.common.bullet.BulletSPI;
 import dk.sdu.mmmi.cbse.common.data.Entity;
+import dk.sdu.mmmi.cbse.common.data.EntityType;
 import dk.sdu.mmmi.cbse.common.data.GameData;
 import dk.sdu.mmmi.cbse.common.data.World;
 import dk.sdu.mmmi.cbse.common.services.IEntityProcessingService;
 
+import java.util.Optional;
 import java.util.Random;
 import java.util.ServiceLoader;
 
 public class EnemyControlSystem implements IEntityProcessingService {
 
-    private static final double rotationSpeed  = 1.5;
-    private static final double movementSpeed      = 0.5;
+    private static final double movementSpeed  = 0.5;
     private static final int    shootInterval  = 150; // frames between shots
 
     private final Random rng = new Random();
     private int shootTimer = 0;
+    private long nextDirectionChange = 0;
 
     @Override
     public void process(GameData gameData, World world) {
-        for (Entity entity : world.getEntities(Enemy.class)) {
-            entity.setRotation(entity.getRotation() + rotationSpeed + rng.nextDouble() - 0.5);
+        long now = System.currentTimeMillis();
+        if (now >= nextDirectionChange) {
+            nextDirectionChange = now + 1000 + rng.nextInt(1000);
+            for (Entity entity : world.getEntities(Enemy.class)) {
+                entity.setRotation(rng.nextDouble() * 360);
+            }
+        }
 
+        for (Entity entity : world.getEntities(Enemy.class)) {
             double rad = Math.toRadians(entity.getRotation());
             entity.setX(entity.getX() + Math.cos(rad) * movementSpeed);
             entity.setY(entity.getY() + Math.sin(rad) * movementSpeed);
@@ -41,8 +49,20 @@ public class EnemyControlSystem implements IEntityProcessingService {
     }
 
     private void fire(Entity shooter, GameData gameData, World world) {
+        Optional<Entity> player = world.getEntities().stream()
+                .filter(e -> e.getEntityType() == EntityType.PLAYER)
+                .findFirst();
+        if (player.isEmpty()) return;
+
+        double dx = player.get().getX() - shooter.getX();
+        double dy = player.get().getY() - shooter.getY();
+        double aimAngle = Math.toDegrees(Math.atan2(dy, dx)) + (rng.nextDouble() * 10 - 5);
+
         ServiceLoader.load(BulletSPI.class).findFirst().ifPresent(spi -> {
+            double savedRotation = shooter.getRotation();
+            shooter.setRotation(aimAngle);
             Entity bullet = spi.createBullet(shooter, gameData);
+            shooter.setRotation(savedRotation);
             world.addEntity(bullet);
         });
     }
