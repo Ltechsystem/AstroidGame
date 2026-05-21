@@ -88,6 +88,7 @@ public class Game {
 
         stage.setTitle("Asteroids");
         stage.setScene(scene);
+        stage.setResizable(false);
         stage.setOnCloseRequest(e -> System.exit(0));
         stage.show();
     }
