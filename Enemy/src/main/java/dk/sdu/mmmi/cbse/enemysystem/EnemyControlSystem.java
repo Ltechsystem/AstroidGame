@@ -22,6 +22,10 @@ public class EnemyControlSystem implements IEntityProcessingService {
 
     @Override
     public void process(GameData gameData, World world) {
+        while (gameData.pollEnemySpawn()) {
+            world.addEntity(spawnEnemy(gameData));
+        }
+
         long now = System.currentTimeMillis();
         if (now >= nextDirectionChange) {
             nextDirectionChange = now + 1000 + rng.nextInt(1000);
@@ -46,6 +50,23 @@ public class EnemyControlSystem implements IEntityProcessingService {
                 fire(entity, gameData, world);
             }
         }
+    }
+
+    private Enemy spawnEnemy(GameData gameData) {
+        Enemy e = new Enemy();
+        e.setPolygonCoordinates(-5, -5, 10, 0, -5, 5);
+        e.setRadius(8);
+        e.setLife(2);
+        double w = gameData.getDisplayWidth();
+        double h = gameData.getDisplayHeight();
+        switch (rng.nextInt(4)) {
+            case 0 -> { e.setX(rng.nextDouble() * w); e.setY(0); }
+            case 1 -> { e.setX(rng.nextDouble() * w); e.setY(h); }
+            case 2 -> { e.setX(0);                    e.setY(rng.nextDouble() * h); }
+            default-> { e.setX(w);                    e.setY(rng.nextDouble() * h); }
+        }
+        e.setRotation(rng.nextDouble() * 360);
+        return e;
     }
 
     private void fire(Entity shooter, GameData gameData, World world) {

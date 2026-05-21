@@ -10,11 +10,15 @@ import dk.sdu.mmmi.cbse.common.data.World;
 import dk.sdu.mmmi.cbse.common.services.IPostEntityProcessingService;
 
 import java.util.List;
+import java.util.Random;
 import java.util.ServiceLoader;
 
 public class CollisionDetector implements IPostEntityProcessingService {
 
-    private static final int astroidScore = 10;
+    private static final int    astroidScore    = 10;
+    private static final double enemySpawnChance = 0.20;
+
+    private final Random rng = new Random();
 
     @Override
     public void process(GameData gameData, World world) {
@@ -42,11 +46,9 @@ public class CollisionDetector implements IPostEntityProcessingService {
 
                 // Player ship collides with asteroid
                 } else if (isPlayer(a) && isAsteroid(b)) {
-                    world.removeEntity(a);
-                    world.removeEntity(b);
+                    handlePlayerAsteroid(a, b, gameData, world);
                 } else if (isPlayer(b) && isAsteroid(a)) {
-                    world.removeEntity(b);
-                    world.removeEntity(a);
+                    handlePlayerAsteroid(b, a, gameData, world);
                 }
             }
         }
@@ -62,6 +64,7 @@ public class CollisionDetector implements IPostEntityProcessingService {
         }
         world.removeEntity(asteroid);
         gameData.addScore(astroidScore);
+        queueSpawns(gameData);
     }
 
     private void handleBulletShip(Bullet bullet, Entity ship, World world) {
@@ -77,6 +80,27 @@ public class CollisionDetector implements IPostEntityProcessingService {
         ship.reduceLife(1);
         if (ship.getLife() <= 0) {
             world.removeEntity(ship);
+        }
+    }
+
+    private void handlePlayerAsteroid(Entity player, Entity asteroid, GameData gameData, World world) {
+        player.reduceLife(1);
+        if (player.getLife() <= 0) {
+            world.removeEntity(player);
+        }
+        if (asteroid.getRadius() > Asteroid.MinSplitRadius) {
+            ServiceLoader.load(IAsteroidSplitter.class)
+                    .findFirst()
+                    .ifPresent(splitter -> splitter.createSplitAsteroid(asteroid, world));
+        }
+        world.removeEntity(asteroid);
+        queueSpawns(gameData);
+    }
+
+    private void queueSpawns(GameData gameData) {
+        gameData.queueAsteroidSpawn();
+        if (rng.nextDouble() < enemySpawnChance) {
+            gameData.queueEnemySpawn();
         }
     }
 

@@ -3,6 +3,7 @@ package dk.sdu.mmmi.cbse.bulletsystem;
 import dk.sdu.mmmi.cbse.common.bullet.Bullet;
 import dk.sdu.mmmi.cbse.common.bullet.BulletSPI;
 import dk.sdu.mmmi.cbse.common.data.Entity;
+import dk.sdu.mmmi.cbse.common.data.EntityType;
 import dk.sdu.mmmi.cbse.common.data.GameData;
 import dk.sdu.mmmi.cbse.common.data.World;
 import dk.sdu.mmmi.cbse.common.services.IEntityProcessingService;
@@ -12,17 +13,19 @@ import java.util.List;
 
 public class BulletControlSystem implements IEntityProcessingService, BulletSPI {
 
-    private static final double bulletSpeed  = 5.0;
-    private static final double bulletOffset = 10.0;
+    private static final double playerBulletSpeed = 5.0;
+    private static final double enemyBulletSpeed  = playerBulletSpeed / 2;
+    private static final double bulletOffset      = 10.0;
 
     @Override
     public void process(GameData gameData, World world) {
         List<Entity> toRemove = new ArrayList<>();
         for (Entity bullet : world.getEntities(Bullet.class)) {
             Bullet b = (Bullet) bullet;
+            double speed = b.getParentType() == EntityType.ENEMY ? enemyBulletSpeed : playerBulletSpeed;
             double rad = Math.toRadians(b.getRotation());
-            b.setX(b.getX() + Math.cos(rad) * bulletSpeed);
-            b.setY(b.getY() + Math.sin(rad) * bulletSpeed);
+            b.setX(b.getX() + Math.cos(rad) * speed);
+            b.setY(b.getY() + Math.sin(rad) * speed);
 
             if (b.getX() < 0 || b.getX() > gameData.getDisplayWidth()
                     || b.getY() < 0 || b.getY() > gameData.getDisplayHeight()) {

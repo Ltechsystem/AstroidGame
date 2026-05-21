@@ -1,6 +1,7 @@
 package dk.sdu.mmmi.cbse.main;
 
 import dk.sdu.mmmi.cbse.common.data.Entity;
+import dk.sdu.mmmi.cbse.common.data.EntityType;
 import dk.sdu.mmmi.cbse.common.data.GameData;
 import dk.sdu.mmmi.cbse.common.data.GameKeys;
 import dk.sdu.mmmi.cbse.common.data.World;
@@ -18,6 +19,7 @@ import javafx.stage.Stage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class Game {
 
@@ -32,6 +34,8 @@ public class Game {
     private final Map<String, Polygon> polygonMap = new HashMap<>();
     private Pane          gameWindow;
     private Text          scoreLabel;
+    private Text          healthLabel;
+    private int           maxLife = 0;
     private AnimationTimer gameLoop;
 
     public Game(List<IGamePluginService>            gamePlugins,
@@ -53,6 +57,11 @@ public class Game {
         scoreLabel.setX(10);
         scoreLabel.setY(20);
         gameWindow.getChildren().add(scoreLabel);
+
+        healthLabel = new Text();
+        healthLabel.setFill(Color.WHITE);
+        healthLabel.setY(20);
+        gameWindow.getChildren().add(healthLabel);
 
         Scene scene = new Scene(gameWindow,
                 gameData.getDisplayWidth(),
@@ -80,6 +89,13 @@ public class Game {
 
         for (IGamePluginService plugin : gamePlugins) {
             plugin.start(gameData, world);
+        }
+
+        boolean hasPlayerModule = world.getEntities().stream()
+                .anyMatch(e -> e.getEntityType() == EntityType.PLAYER);
+        if (!hasPlayerModule) {
+            gameWindow.getChildren().remove(healthLabel);
+            healthLabel = null;
         }
 
         for (Entity e : world.getEntities()) {
@@ -136,6 +152,20 @@ public class Game {
 
         scoreLabel.setText("Score: " + gameData.getScore());
         scoreLabel.toFront();
+
+        if (healthLabel != null) {
+            Optional<Entity> player = world.getEntities().stream()
+                    .filter(e -> e.getEntityType() == EntityType.PLAYER)
+                    .findFirst();
+            int currentLife = player.map(e -> {
+                if (maxLife == 0) maxLife = e.getLife();
+                return e.getLife();
+            }).orElse(0);
+            String health = "(" + currentLife + " / " + maxLife + " Health left)";
+            healthLabel.setText(health);
+            healthLabel.setX(gameData.getDisplayWidth() - healthLabel.getLayoutBounds().getWidth() - 10);
+            healthLabel.toFront();
+        }
     }
 
     private void addPolygon(Entity entity) {

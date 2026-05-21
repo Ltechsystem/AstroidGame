@@ -153,7 +153,7 @@ class CollisionDetectorTest {
     }
 
     @Test
-    void shipCollidesWithAsteroid_bothDestroyed() {
+    void shipCollidesWithAsteroid_playerLosesOneLife_asteroidDestroyed() {
         Entity player = ship(EntityType.PLAYER, 200, 200, 3);
         Asteroid a    = asteroid(200, 200, 15);
         world.addEntity(player);
@@ -161,7 +161,21 @@ class CollisionDetectorTest {
 
         detector.process(gameData, world);
 
-        assertFalse(world.getEntities().contains(player), "Player should be destroyed");
+        assertTrue(world.getEntities().contains(player), "Player with life > 1 should survive");
+        assertEquals(2, player.getLife(), "Player should lose 1 life");
+        assertFalse(world.getEntities().contains(a), "Asteroid should be destroyed");
+    }
+
+    @Test
+    void shipCollidesWithAsteroid_lastLife_playerDestroyed() {
+        Entity player = ship(EntityType.PLAYER, 200, 200, 1);
+        Asteroid a    = asteroid(200, 200, 15);
+        world.addEntity(player);
+        world.addEntity(a);
+
+        detector.process(gameData, world);
+
+        assertFalse(world.getEntities().contains(player), "Player with 0 life should be removed");
         assertFalse(world.getEntities().contains(a),      "Asteroid should be destroyed");
     }
 }
