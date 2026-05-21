@@ -28,10 +28,10 @@ public class CollisionDetector implements IPostEntityProcessingService {
                 if (world.getEntity(a.getID()) == null || world.getEntity(b.getID()) == null) continue;
                 if (!overlaps(a, b)) continue;
 
-                // Bullet hits an asteroid
-                if (isBullet(a) && isAsteroid(b)) {
+                // Bullet hits an asteroid (only player bullets)
+                if (isPlayerBullet(a) && isAsteroid(b)) {
                     handleBulletAsteroid((Bullet) a, b, gameData, world);
-                } else if (isBullet(b) && isAsteroid(a)) {
+                } else if (isPlayerBullet(b) && isAsteroid(a)) {
                     handleBulletAsteroid((Bullet) b, a, gameData, world);
 
                 // Bullet hits a ship
@@ -40,11 +40,11 @@ public class CollisionDetector implements IPostEntityProcessingService {
                 } else if (isBullet(b) && isShip(a)) {
                     handleBulletShip((Bullet) b, a, world);
 
-                // Ship collides with asteroid
-                } else if (isShip(a) && isAsteroid(b)) {
+                // Player ship collides with asteroid
+                } else if (isPlayer(a) && isAsteroid(b)) {
                     world.removeEntity(a);
                     world.removeEntity(b);
-                } else if (isShip(b) && isAsteroid(a)) {
+                } else if (isPlayer(b) && isAsteroid(a)) {
                     world.removeEntity(b);
                     world.removeEntity(a);
                 }
@@ -87,8 +87,10 @@ public class CollisionDetector implements IPostEntityProcessingService {
         return dist < (a.getRadius() + b.getRadius());
     }
 
-    private boolean isBullet(Entity entity)   { return entity.getEntityType() == EntityType.BULLET;   }
-    private boolean isAsteroid(Entity entity) { return entity instanceof Asteroid;                     }
-    private boolean isShip(Entity entity)     { return entity.getEntityType() == EntityType.PLAYER
-                                               || entity.getEntityType() == EntityType.ENEMY;     }
+    private boolean isBullet(Entity entity)       { return entity.getEntityType() == EntityType.BULLET; }
+    private boolean isPlayerBullet(Entity entity) { return isBullet(entity) && ((Bullet) entity).getParentType() == EntityType.PLAYER; }
+    private boolean isAsteroid(Entity entity)     { return entity instanceof Asteroid; }
+    private boolean isPlayer(Entity entity)       { return entity.getEntityType() == EntityType.PLAYER; }
+    private boolean isShip(Entity entity)         { return entity.getEntityType() == EntityType.PLAYER
+                                                       || entity.getEntityType() == EntityType.ENEMY; }
 }

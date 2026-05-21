@@ -12,9 +12,8 @@ import java.util.List;
 
 public class BulletControlSystem implements IEntityProcessingService, BulletSPI {
 
-    private static final double bulletSpeed    = 5.0;
-    private static final int    bulletLifetime = 80; // frames
-    private static final double bulletOffset   = 10.0;
+    private static final double bulletSpeed  = 5.0;
+    private static final double bulletOffset = 10.0;
 
     @Override
     public void process(GameData gameData, World world) {
@@ -25,16 +24,10 @@ public class BulletControlSystem implements IEntityProcessingService, BulletSPI 
             b.setX(b.getX() + Math.cos(rad) * bulletSpeed);
             b.setY(b.getY() + Math.sin(rad) * bulletSpeed);
 
-            b.setLife(b.getLife() - 1);
-            if (b.getLife() <= 0) {
+            if (b.getX() < 0 || b.getX() > gameData.getDisplayWidth()
+                    || b.getY() < 0 || b.getY() > gameData.getDisplayHeight()) {
                 toRemove.add(b);
             }
-
-            // Screen wrap for bullets
-            if (b.getX() < 0)                          b.setX(gameData.getDisplayWidth());
-            if (b.getX() > gameData.getDisplayWidth())  b.setX(0);
-            if (b.getY() < 0)                          b.setY(gameData.getDisplayHeight());
-            if (b.getY() > gameData.getDisplayHeight()) b.setY(0);
         }
         toRemove.forEach(world::removeEntity);
     }
@@ -47,7 +40,6 @@ public class BulletControlSystem implements IEntityProcessingService, BulletSPI 
         bullet.setY(shooter.getY() + Math.sin(rad) * bulletOffset);
         bullet.setRotation(shooter.getRotation());
         bullet.setRadius(2);
-        bullet.setLife(bulletLifetime);
         bullet.setPolygonCoordinates(0, 0, 2, 2, 0, 4, -2, 2);
         bullet.setParentType(shooter.getEntityType());
         return bullet;
