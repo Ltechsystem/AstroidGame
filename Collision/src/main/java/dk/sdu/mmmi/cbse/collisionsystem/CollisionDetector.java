@@ -8,6 +8,7 @@ import dk.sdu.mmmi.cbse.common.data.EntityType;
 import dk.sdu.mmmi.cbse.common.data.GameData;
 import dk.sdu.mmmi.cbse.common.data.World;
 import dk.sdu.mmmi.cbse.common.services.IPostEntityProcessingService;
+import dk.sdu.mmmi.cbse.common.util.ServiceLocator;
 
 import java.util.List;
 import java.util.Random;
@@ -40,9 +41,9 @@ public class CollisionDetector implements IPostEntityProcessingService {
 
                 // Bullet hits a ship
                 } else if (isBullet(a) && isShip(b)) {
-                    handleBulletShip((Bullet) a, b, world);
+                    handleBulletShip((Bullet) a, b, gameData, world);
                 } else if (isBullet(b) && isShip(a)) {
-                    handleBulletShip((Bullet) b, a, world);
+                    handleBulletShip((Bullet) b, a, gameData, world);
 
                 // Player ship collides with asteroid
                 } else if (isPlayer(a) && isAsteroid(b)) {
@@ -58,16 +59,15 @@ public class CollisionDetector implements IPostEntityProcessingService {
                                        GameData gameData, World world) {
         world.removeEntity(bullet);
         if (asteroid.getRadius() > Asteroid.MinSplitRadius) {
-            ServiceLoader.load(IAsteroidSplitter.class)
-                    .findFirst()
-                    .ifPresent(splitter -> splitter.createSplitAsteroid(asteroid, world));
+            IAsteroidSplitter splitter = getSplitter();
+            if (splitter != null) splitter.createSplitAsteroid(asteroid, world);
         }
         world.removeEntity(asteroid);
         gameData.addScore(astroidScore);
         queueSpawns(gameData);
     }
 
-    private void handleBulletShip(Bullet bullet, Entity ship, World world) {
+    private void handleBulletShip(Bullet bullet, Entity ship, GameData gameData, World world) {
         EntityType shooterType = bullet.getParentType();
         EntityType shipType    = ship.getEntityType();
 
@@ -80,6 +80,9 @@ public class CollisionDetector implements IPostEntityProcessingService {
         ship.reduceLife(1);
         if (ship.getLife() <= 0) {
             world.removeEntity(ship);
+            if (shipType == EntityType.PLAYER) {
+                gameData.requestGameReset();
+            }
         }
     }
 
@@ -87,14 +90,22 @@ public class CollisionDetector implements IPostEntityProcessingService {
         player.reduceLife(1);
         if (player.getLife() <= 0) {
             world.removeEntity(player);
+            gameData.requestGameReset();
         }
         if (asteroid.getRadius() > Asteroid.MinSplitRadius) {
-            ServiceLoader.load(IAsteroidSplitter.class)
-                    .findFirst()
-                    .ifPresent(splitter -> splitter.createSplitAsteroid(asteroid, world));
+            IAsteroidSplitter splitter = getSplitter();
+            if (splitter != null) splitter.createSplitAsteroid(asteroid, world);
         }
         world.removeEntity(asteroid);
         queueSpawns(gameData);
+    }
+
+    private IAsteroidSplitter getSplitter() {
+        ModuleLayer layer = ServiceLocator.getPluginLayer();
+        if (layer != null) {
+            return ServiceLoader.load(layer, IAsteroidSplitter.class).findFirst().orElse(null);
+        }
+        return ServiceLoader.load(IAsteroidSplitter.class).findFirst().orElse(null);
     }
 
     private void queueSpawns(GameData gameData) {

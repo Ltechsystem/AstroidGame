@@ -6,8 +6,9 @@ public class GameData {
     private int displayHeight = 800;
     private final GameKeys keys = new GameKeys();
     private int score            = 0;
-    private int asteroidsToSpawn = 0;
-    private int enemiesToSpawn   = 0;
+    private int     asteroidsToSpawn   = 0;
+    private int     enemiesToSpawn     = 0;
+    private boolean gameResetRequested = false;
 
     public void queueAsteroidSpawn() { asteroidsToSpawn++; }
     public boolean pollAsteroidSpawn() {
@@ -19,6 +20,18 @@ public class GameData {
     public boolean pollEnemySpawn() {
         if (enemiesToSpawn > 0) { enemiesToSpawn--; return true; }
         return false;
+    }
+
+    public void requestGameReset() { gameResetRequested = true; }
+
+    public boolean pollGameReset() {
+        if (gameResetRequested) { gameResetRequested = false; return true; }
+        return false;
+    }
+
+    public void resetQueues() {
+        asteroidsToSpawn = 0;
+        enemiesToSpawn   = 0;
     }
 
     public int getDisplayWidth() {

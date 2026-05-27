@@ -9,19 +9,19 @@ import java.util.Random;
 
 public class EnemyPlugin implements IGamePluginService {
 
-    private Entity enemy;
     private final Random rng = new Random();
 
     @Override
     public void start(GameData gameData, World world) {
-        enemy = createEnemy(gameData);
-        world.addEntity(enemy);
+        world.addEntity(createEnemy(gameData));
     }
 
     @Override
     public void stop(GameData gameData, World world) {
-        world.removeEntity(enemy);
-        enemy = null;
+        // Remove every Enemy entity, including any that were spawned at runtime
+        for (Entity enemy : world.getEntities(Enemy.class)) {
+            world.removeEntity(enemy);
+        }
     }
 
     private Entity createEnemy(GameData gameData) {

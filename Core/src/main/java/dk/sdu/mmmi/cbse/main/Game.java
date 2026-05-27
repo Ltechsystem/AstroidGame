@@ -128,8 +128,25 @@ public class Game {
         for (IPostEntityProcessingService postProcessor : postProcessors) {
             postProcessor.process(gameData, world);
         }
+
+        if (gameData.pollGameReset()) {
+            restartGame();
+        }
+
         // Post score to the scoring microservice
         scoreClient.postScore(gameData.getScore());
+    }
+
+    private void restartGame() {
+        for (IGamePluginService plugin : gamePlugins) {
+            plugin.stop(gameData, world);
+        }
+        gameData.resetScore();
+        gameData.resetQueues();
+        maxLife = 0;
+        for (IGamePluginService plugin : gamePlugins) {
+            plugin.start(gameData, world);
+        }
     }
 
     private void draw() {
